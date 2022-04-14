@@ -7,23 +7,23 @@ from torchvision import datasets, transforms
 from pdb import set_trace as breakpoint
 
 class VAE(nn.Module):
-    def __init__(self, input_dim, hidden_dim, latent_dim):
+    def __init__(self, input_dim, hidden_dim, latent_dim, activation=nn.ReLU):
         super(VAE, self).__init__()
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.latent_dim = latent_dim
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
+            activation(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
+            activation(),
             nn.Linear(hidden_dim, latent_dim * 2)
         )
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, hidden_dim),
-            nn.ReLU(),
+            activation(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
+            activation(),
             nn.Linear(hidden_dim, input_dim),
             nn.Sigmoid()
         )
@@ -94,13 +94,15 @@ def train(model, train_loader, val_loader, optimizer, epochs=10, c=0.01):
 
 if __name__ == '__main__':
     input_dim = 28 * 28
-    # hidden_dim = 500
-    hidden_dim = 128
-    latent_dim = 2
-    c = 0.01
+    hidden_dim = 500
+    # hidden_dim = 128
+    latent_dim = 20
+    # c = 0.001
+    c = 0
+    activation = nn.ReLU
 
-    model = VAE(input_dim, hidden_dim, latent_dim).to(device)
+    model = VAE(input_dim, hidden_dim, latent_dim, activation).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    train(model, train_loader, test_loader, optimizer, epochs=10, c=c)
+    train(model, train_loader, test_loader, optimizer, epochs=30, c=c)
     # save model
     torch.save(model.state_dict(), 'vae.pth')
