@@ -36,6 +36,8 @@ class VAE(nn.Module):
         # encode
         z = self.encoder(x)
         mu, logvar = z[:, :self.latent_dim], z[:, self.latent_dim:]
+        # clip logvar to avoid exploding gradients
+        logvar = torch.clamp(logvar, min=-15, max=15)
         # reparameterize
         z = self.reparameterize(mu, logvar)
         # decode
@@ -126,6 +128,8 @@ class ConvVAE(nn.Module):
         # encode
         z = self.encoder(x)
         mu, logvar = z[:, :self.latent_dim], z[:, self.latent_dim:]
+        # clip logvar to avoid exploding gradients
+        logvar = torch.clamp(logvar, min=-15, max=15)
         # reparameterize
         z = self.reparameterize(mu, logvar)
         # decode
@@ -164,7 +168,6 @@ def train(model, train_loader, test_loader, optimizer, epochs=10, c=0.01):
             loss += c * (mu.pow(2).sum(axis=1) + logvar.exp().sum(axis=1) - logvar.sum(axis=1) - logvar.shape[1]).mean()
             # loss += c * (torch.sum(1 + logvar - mu.pow(2) - logvar.exp())).to(device)
             loss.backward()
-            breakpoint()
             train_loss += loss.item()
             optimizer.step()
             if batch_idx % 100 == 0:
@@ -175,16 +178,16 @@ def train(model, train_loader, test_loader, optimizer, epochs=10, c=0.01):
         print('====> Epoch: {} Average loss: {:.4f}'.format(
             epoch, train_loss / len(train_loader.dataset)))
         # validate
-        test_loss = 0
-        for batch_idx, (data, _, _) in enumerate(test_loader):
-            data = data.view(-1, size**2).to(device)
-            recon_batch, mu, logvar = model(data)
-            loss = F.binary_cross_entropy(recon_batch, data, reduction='mean')
-            # loss = F.mse_loss(recon_batch, data, reduction='mean')
-            loss += c * (mu.pow(2).sum(axis=1) + logvar.exp().sum(axis=1) - logvar.sum(axis=1) - logvar.shape[1]).mean()
-            test_loss += loss.item()
-        print('====> Validation loss: {:.4f}'.format(
-            test_loss / len(test_loader.dataset)))
+        # test_loss = 0
+        # for batch_idx, (data, _, _) in enumerate(test_loader):
+        #     data = data.view(-1, size**2).to(device)
+        #     recon_batch, mu, logvar = model(data)
+        #     loss = F.binary_cross_entropy(recon_batch, data, reduction='mean')
+        #     # loss = F.mse_loss(recon_batch, data, reduction='mean')
+        #     loss += c * (mu.pow(2).sum(axis=1) + logvar.exp().sum(axis=1) - logvar.sum(axis=1) - logvar.shape[1]).mean()
+        #     test_loss += loss.item()
+        # print('====> Validation loss: {:.4f}'.format(
+        #     test_loss / len(test_loader.dataset)))
 
 def train_conv_vae(model, train_loader, test_loader, optimizer, epochs=10, c=0.01):
     model.train()
@@ -227,12 +230,13 @@ if __name__ == '__main__':
     input_dim = size**2
     hidden_dim = 1024
     # hidden_dim = 128
-    latent_dim = 20
+    latent_dim = 128
     # c = 0.001
     c = 0.0001
     # c = 0
     # activation = nn.ReLU
     activation = nn.SiLU
+    # activation = nn.Sigmoid
 
     # model = VAE(input_dim, hidden_dim, latent_dim, activation).to(device)
     # # load params
@@ -242,7 +246,7 @@ if __name__ == '__main__':
     # # save model
     # torch.save(model.state_dict(), 'vae.pth')
     
-    # train with convolutional VAE
+    # # train with convolutional VAE
     model = ConvVAE(size, hidden_dim, latent_dim, activation).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     train_conv_vae(model, train_loader, test_loader, optimizer, epochs=10, c=c)
