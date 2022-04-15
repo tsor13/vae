@@ -95,14 +95,26 @@ class ConvVAE(nn.Module):
         return self.decoder(z), mu, logvar
 
 
-# load MNIST
-train_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=True, download=True,
-                     transform=transforms.ToTensor()),
-    batch_size=64, shuffle=True)
-test_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=False, transform=transforms.ToTensor()),
-    batch_size=64, shuffle=True)
+# dataset = 'mnist'
+dataset = 'emnist'
+if dataset == 'mnist':
+    # load MNIST
+    train_loader = torch.utils.data.DataLoader(
+        datasets.MNIST('../data', train=True, download=True,
+                        transform=transforms.ToTensor()),
+        batch_size=64, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(
+        datasets.MNIST('../data', train=False, transform=transforms.ToTensor()),
+        batch_size=64, shuffle=True)
+elif dataset == 'emnist':
+    # load EMNIST
+    train_loader = torch.utils.data.DataLoader(
+        datasets.EMNIST('../data', split='byclass', train=True, download=True,
+                        transform=transforms.ToTensor()),
+        batch_size=64, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(
+        datasets.EMNIST('../data', split='byclass', train=False, transform=transforms.ToTensor()),
+        batch_size=64, shuffle=True)
 
 input_dim = 28 * 28
 hidden_dim = 500
@@ -183,17 +195,18 @@ def train_conv_vae(model, train_loader, val_loader, optimizer, epochs=10, c=0.01
 
 if __name__ == '__main__':
     input_dim = 28 * 28
-    hidden_dim = 500
+    hidden_dim = 1024
     # hidden_dim = 128
     latent_dim = 20
     # c = 0.001
-    c = 0
+    c = 0.0001
+    # c = 0
     # activation = nn.ReLU
     activation = nn.SiLU
 
     # model = VAE(input_dim, hidden_dim, latent_dim, activation).to(device)
     # # load params
-    # model.load_state_dict(torch.load('vae.pth'))
+    # # model.load_state_dict(torch.load('vae.pth'))
     # optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     # train(model, train_loader, test_loader, optimizer, epochs=10, c=c)
     # # save model
