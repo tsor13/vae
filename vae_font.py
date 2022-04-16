@@ -233,6 +233,7 @@ if __name__ == '__main__':
     latent_dim = 128
     # c = 0.001
     c = 0.0001
+    # c = 0.00001
     # c = 0
     # activation = nn.ReLU
     activation = nn.SiLU
@@ -248,7 +249,8 @@ if __name__ == '__main__':
     
     # # train with convolutional VAE
     model = ConvVAE(size, hidden_dim, latent_dim, activation).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    train_conv_vae(model, train_loader, test_loader, optimizer, epochs=10, c=c)
+    model.load_state_dict(torch.load('conv_vae.pth'))
+    optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
+    train_conv_vae(model, train_loader, test_loader, optimizer, epochs=5, c=c)
     # save model
     torch.save(model.state_dict(), 'conv_vae.pth')
